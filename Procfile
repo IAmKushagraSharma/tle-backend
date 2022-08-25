@@ -1,1 +1,1 @@
-eb: waitress-serve --port=$PORT tle-backend.wsgi:application
+web: waitress-serve --port=$PORT tle-backend.wsgi:application
