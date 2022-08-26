@@ -15,6 +15,13 @@ from django.db.models import Q
 @api_view(['GET'])
 def endpoints(request):
     routes = [
+
+        {
+            'Endpoint': 'gettle/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns TLE of satelites'
+        },
         {
             'Endpoint': 'byname/<satellite name>',
             'method': 'GET',
@@ -27,58 +34,77 @@ def endpoints(request):
             'body': None,
             'description': 'Returns TLE by it\'s id'
         },
+        {
+            'Endpoint': 'tlebyid/id',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns TLE of satelite by it\'s id'
+        },
+        {
+            'Endpoint': 'tlebyname/name',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns TLE of satelite by it\'s name '
+        },
+        {
+            'Endpoint': 'satellite/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns data of All satelite or by it\'s name'
+        },
+        {
+            'Endpoint': 'satellite/<name>',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns data of All sensor of given satellite'
+        },
+        {
+            'Endpoint': 'satellite/<name>/<sensor>',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns data of selected sensor of given satellite'
+        },
+        {
+            'Endpoint': 'sensor/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns list of sensor'
+        },
+        {
+            'Endpoint': 'sensor/<name>',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns list of satellite related to given sensor'
+        },
+        {
+            'Endpoint': 'sensor/<name>/<sensor>',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns data of selected sensor & satellite'
+        },
+        {
+            'Endpoint': 'application/',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns list of application'
+        },
+        {
+            'Endpoint': 'application/<applicationname>',
+            'method': 'GET',
+            'body': None,
+            'description': 'Returns details of sensor for given application '
+        },
     ]
     return Response(routes)
 
 
-@api_view(['GET'])
-def byname(request, satname):
-    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?NAME={satname}&FORMAT=json').json()
-    return Response(response)
+
 
 
 @api_view(['GET'])
-def tlebyname(request, satname):
-    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?NAME={satname}&FORMAT=TLE')
-    return Response(response)
-
-
-@api_view(['GET'])
-def byid(request, satid):
-    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?CATNR={satid}&FORMAT=json').json()
-    return Response(response)
-
-
-@api_view(['GET'])
-def orbital_elements(request, satName):
-    data = requests.get(
-        f'https://tle-backend.herokuapp.com/tlebyname/{satName}').json()
-
-    tle_lines = [data["name"], data["line1"], data["line2"]]
-
-    tle = TLE.from_lines(*tle_lines)
-    orb = tle.to_orbit()
-
-    Data = [
-        {"semimajor_axis": orb.a},
-        {"orbit_period": orb.period},
-        {"eccentricity": orb.ecc},
-        {"argument_of_perigree": orb.argp},
-        {"inclination": orb.inc},
-        {"mean_motion": orb.n},
-        {"eccentricity_vector": orb.e_vec},
-        {"true_anomaly": orb.nu},
-        {"raan": orb.raan},
-        {"epoch": orb.epoch},
-        {"argument_of_latitude": orb.arglat},
-    ]
-
-    return Response(str(Data))
-
-
-class RegisterUserAPIView(generics.CreateAPIView):
-    permission_classes = (AllowAny,)
-    serializer_class = RegisterSerializer
+def orbital_elements(request, name):
+    data = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?NAME={name}&FORMAT=json').json()
+    return Response(data)
 
 
 @api_view(['GET'])
@@ -90,18 +116,32 @@ def get_tle(request):
 
 @api_view(['GET'])
 def tle_by_id(request, id):
-    response = requests.get(
-        f'https://tle.ivanstanojevic.me/api/tle/{id}?api_key={api_key}').json()
+    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?CATNR={id}&FORMAT=2LE')
     return Response(response)
 
 
 @api_view(['GET'])
 def tle_by_name(request, name):
-    Id = SatNameId.objects.filter(Name=name)[0].SatId
-    if (Id):
-        response = requests.api.get(
-            f'https://tle.ivanstanojevic.me/api/tle/{Id}?&api_key={api_key}').json()
+    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?NAME={name}&FORMAT=2LE')
+    print(response)
     return Response(response)
+
+
+@api_view(['GET'])
+def orbital_elements_by_id(request, id):
+    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?CATNR={id}&FORMAT=json').json()
+    return Response(response)
+
+
+@api_view(['GET'])
+def orbital_elements_by_name(request, name):
+    response = requests.get(f'https://celestrak.org/NORAD/elements/gp.php?NAME={name}&FORMAT=json').json()
+    return Response(response)
+
+
+
+
+
 
 
 @api_view(['GET'])
@@ -166,3 +206,12 @@ def application_to_sensor_details(request, applicationname):
             Q(application1=applicationname) | Q(application2=applicationname) | Q(application3=applicationname))
         serializer = SensorallSerializer(sensor, many=True)
         return Response(serializer.data)
+
+
+
+
+
+
+class RegisterUserAPIView(generics.CreateAPIView):
+    permission_classes = (AllowAny,)
+    serializer_class = RegisterSerializer
